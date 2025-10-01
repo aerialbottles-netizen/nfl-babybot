@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NFL BabyBot 2025 — Live</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <h1>🏈 NFL BabyBot 2025 (Live)</h1>
+    <p>Win % • Implied Points • Anytime TD Picks • EV vs Odds — auto-updating defense</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Game Setup</h2>
+      <div class="grid">
+        <label>AWAY <input id="away" placeholder="e.g. SF, PHI, LA, DAL"></label>
+        <label>HOME <input id="home" placeholder="e.g. LA, DAL, SF, PHI"></label>
+        <label>Home ML (optional) <input id="ml_home" type="number" step="1"></label>
+        <label>Away ML (optional) <input id="ml_away" type="number" step="1"></label>
+        <label>Total (optional) <input id="total" type="number" step="0.1"></label>
+      </div>
+      <div class="grid">
+        <label>Wind (mph) <input id="wind" type="number" step="1" value="0"></label>
+        <label>Temp (°F) <input id="temp" type="number" step="1" value="60"></label>
+        <label>Precip
+          <select id="precip">
+            <option value="none">none</option>
+            <option value="rain">rain</option>
+            <option value="snow">snow</option>
+          </select>
+        </label>
+      </div>
+      <button id="runGame">Run Game Prediction</button>
+      <div id="gameOut" class="out"></div>
+    </section>
+
+    <section class="card">
+      <h2>Anytime TD Picks</h2>
+      <div class="grid">
+        <label>Top N <input id="topN" type="number" step="1" value="8"></label>
+      </div>
+      <button id="runTDs">Get Anytime TD Picks</button>
+      <div id="tdOut" class="out"></div>
+    </section>
+
+    <section class="card">
+      <h2>EV vs Your Odds</h2>
+      <p>Paste e.g.: <code>Davante Adams=+125; Puka Nacua=+140</code></p>
+      <textarea id="lines" rows="3" placeholder="Name=+140; Name2=-110"></textarea>
+      <button id="runEV">Compute EV</button>
+      <div id="evOut" class="out"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Defense stats auto-refresh nightly from nflverse.</p>
+  </footer>
+
+  <script>
+    window.DEFS_JSON_URL = "https://raw.githubusercontent.com/USER/REPO/main/data/defs_2025.json";
+  </script>
+  <script src="app.js"></script>
+</body>
+</html>
