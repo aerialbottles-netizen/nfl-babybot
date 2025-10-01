@@ -1,0 +1,41 @@
+name: Build live defense JSON (nightly)
+
+on:
+  schedule:
+    - cron: "0 7 * * *"   # daily at 07:00 UTC
+  workflow_dispatch: {}    # lets you run it manually
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pandas pyarrow fastparquet
+
+      - name: Build defs JSON
+        run: |
+          python scripts/build_defs.py
+
+      - name: Commit updated JSON
+        run: |
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/defs_2025.json
+            git commit -m "nightly: update defs_2025.json"
+            git push
+          else
+            echo "No changes."
+          fi
