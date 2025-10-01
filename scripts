@@ -1,0 +1,62 @@
+# scripts/build_defs.py
+
+import pandas as pd
+import requests
+import json
+from pathlib import Path
+
+# Output path
+OUTFILE = Path("data/defs_2025.json")
+OUTFILE.parent.mkdir(parents=True, exist_ok=True)
+
+# NFLverse stats URL (weekly defense summary)
+NFLVERSE_URL = "https://github.com/nflverse/nflfastR-data/raw/master/data/defense_stats.parquet"
+
+def fetch_defense_stats():
+    print("Downloading NFL defensive stats from NFLverse...")
+    df = pd.read_parquet(NFLVERSE_URL, engine="pyarrow")
+
+    # Filter for 2025 season
+    df = df[df["season"] == 2025]
+
+    # Aggregate by team: rushing TDs allowed, passing TDs allowed, redzone efficiency
+    grouped = df.groupby("posteam").agg(
+        def_rush=("rush_touchdown", "sum"),
+        def_pass=("pass_touchdown", "sum"),
+        rz_trips=("redzone_attempt", "sum"),
+        rz_td=("redzone_touchdown", "sum")
+    ).reset_index()
+
+    # Convert to ratios
+    grouped["rz"] = grouped.apply(
+        lambda r: (r["rz_td"] / r["rz_trips"]) if r["rz_trips"] > 0 else 0.5, axis=1
+    )
+
+    # Normalize: lower = better defense, higher = weaker
+    grouped["def_rush"] = grouped["def_rush"] / grouped["def_rush"].mean()
+    grouped["def_pass"] = grouped["def_pass"] / grouped["def_pass"].mean()
+
+    # Keep only useful columns
+    final = grouped[["posteam", "def_rush", "def_pass", "rz"]]
+
+    return {row.posteam: {
+        "def_rush": round(row.def_rush, 3),
+        "def_pass": round(row.def_pass, 3),
+        "rz": round(row.rz, 3)
+    } for row in final.itertuples()}
+
+if __name__ == "__main__":
+    try:
+        data = fetch_defense_stats()
+        with open(OUTFILE, "w") as f:
+            json.dump(data, f, indent=2)
+        print(f"✅ Saved {len(data)} teams to {OUTFILE}")
+    except Exception as e:
+        print("⚠️ Could not fetch NFL stats, writing fallback neutral JSON")
+        TEAMS = ["ARI","ATL","BAL","BUF","CAR","CHI","CIN","CLE","DAL","DEN","DET","GB","HOU",
+                 "IND","JAX","KC","LA","LAC","LV","MIA","MIN","NE","NO","NYG","NYJ","PHI","PIT",
+                 "SEA","SF","TB","TEN","WAS"]
+        neutral = {t: {"def_rush": 1.0, "def_pass": 1.0, "rz": 0.55} for t in TEAMS}
+        with open(OUTFILE, "w") as f:
+            json.dump(neutral, f, indent=2)
+        print("✅ Wrote fallback neutral JSON")
